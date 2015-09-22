@@ -33,3 +33,9 @@
 
 # backup files
 *.bak
+
+#
+*.wsdt
+*.dep
+*.dni
+*.map
