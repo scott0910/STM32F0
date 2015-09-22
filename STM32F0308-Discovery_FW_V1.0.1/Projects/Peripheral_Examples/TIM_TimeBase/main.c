@@ -401,6 +401,8 @@ int main(void)
        system_stm32f0xx.c file
      */
   
+  //add 123
+  
   if (SysTick_Config(SystemCoreClock / 1000))
   { 
     // Capture error 
