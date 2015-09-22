@@ -47,6 +47,8 @@ extern __IO uint16_t CCR1_Val;
 extern __IO uint16_t CCR2_Val;
 extern __IO uint16_t CCR3_Val;
 
+extern void TimingDelay_Decrement(void);
+
 uint16_t capture = 0;
 
 uint16_t data[][29]={
