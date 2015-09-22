@@ -42,9 +42,52 @@
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
+
+extern __IO uint16_t CCR1_Val;
+extern __IO uint16_t CCR2_Val;
 extern __IO uint16_t CCR3_Val;
-extern __IO uint16_t CCR4_Val;
+
 uint16_t capture = 0;
+
+uint16_t data[][29]={
+                  1,
+                  0,0,0,0,0,0,
+                  0,0,0,1,1,1,1,1,
+                  1,1,1,1,
+                  0,0,0,0,
+                  0,0,0,0,
+                  2,2,
+                  1,
+                  0,0,0,0,0,1,
+                  0,0,0,0,1,1,1,1,
+                  0,0,0,0,
+                  1,1,1,1,                 
+                  0,0,0,0,
+                  2,2,
+                  1,
+                  0,0,0,0,1,0,
+                  0,0,0,0,1,1,1,1,                 
+                  0,0,0,0,                  
+                  0,0,0,0,                  
+                  1,1,1,1,                  
+                  2,2
+              };
+
+uint16_t global_data[]={
+                  1,
+                  1,1,1,1,1,1,
+                  1,1,1,1,1,1,1,1,
+                  0,0,0,0,
+                  0,0,0,0,
+                  1,1,1,1,
+                  2,2};
+
+uint16_t ManIndex=0;
+uint16_t ManCode[3]={0,0,0};
+uint16_t DataIndex = 0;
+uint16_t LedNo=0;
+uint16_t flag=0;
+                  
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
 
@@ -99,6 +142,7 @@ void PendSV_Handler(void)
   */
 void SysTick_Handler(void)
 {
+  TimingDelay_Decrement();
 }
 
 /******************************************************************************/
@@ -113,26 +157,312 @@ void SysTick_Handler(void)
   * @param  None
   * @retval None
   */
-void TIM3_IRQHandler(void)
+enum STATE{NONE = 0, INTERVAL, START1, START2, DATA1, DATA2};
+enum STATE next_state = NONE;
+uint32_t Led_data = 0x0 << 20 | 0xf << 12 | 0x0 << 8 | 0x0 << 4 | 0xf;
+uint32_t index = 0;
+
+enum STATE next_state2 = NONE;
+uint32_t Led_data2 = 0x0 << 20 | 0xf << 12 | 0x0 << 8 | 0x0 << 4 | 0xf;
+uint32_t index2 = 0;
+
+enum STATE next_state3 = NONE;
+uint32_t Led_data3 = 0x0 << 20 | 0xf << 12 | 0x0 << 8 | 0x0 << 4 | 0xf;
+uint32_t index3 = 0;
+uint32_t reg = 0;
+
+void TIM16_IRQHandler(void)
 {
+  /*
+  if (TIM_GetITStatus(TIM16, TIM_IT_CC1) != RESET){
+    TIM_ClearITPendingBit(TIM16, TIM_IT_CC1);
+    capture = TIM_GetCapture1(TIM16);
+    TIM_SetCompare1(TIM16, capture + CCR1_Val);
+    STM_EVAL_LEDToggle(LED4);
+  }
+  */
+  
+  
+    if (TIM_GetITStatus(TIM16, TIM_IT_CC1) != RESET){
+      TIM_ClearITPendingBit(TIM16, TIM_IT_CC1);
+      capture = TIM_GetCapture1(TIM16);             
+      
+      switch(next_state2)
+      {
+      case INTERVAL:
+        TIM_SetCompare1(TIM16, capture + CCR1_Val * 5);
+        STM_EVAL_LEDOff(LED4);
+        next_state2 = START1;
+        break;
+      case START1:
+        TIM_SetCompare1(TIM16, capture + CCR1_Val * 2);
+        STM_EVAL_LEDOff(LED4);       
+        next_state2 = START2;
+        break;
+      case START2:
+        TIM_SetCompare1(TIM16, capture + CCR1_Val);
+        STM_EVAL_LEDOn(LED4);               
+        next_state2 = DATA1;
+        index2 = 0x1 << 25;
+        break;
+      case DATA1:
+        if(Led_data2 & index2){        
+          TIM_SetCompare1(TIM16, capture + CCR1_Val * 2);
+          STM_EVAL_LEDOff(LED4);
+        }
+        else
+        {
+          TIM_SetCompare1(TIM16, capture + CCR1_Val);
+          STM_EVAL_LEDOff(LED4);          
+        }                   
+        next_state2 = DATA2;
+        break;
+      case DATA2:
+        if(Led_data2 & index2){        
+          TIM_SetCompare1(TIM16, capture + CCR1_Val);
+          STM_EVAL_LEDOn(LED4);
+        }
+        else
+        {
+          TIM_SetCompare1(TIM16, capture + CCR1_Val*2);
+          STM_EVAL_LEDOn(LED4);          
+        }                           
+        index2 = index2 >> 1;
+        if(index2 == 0){
+          next_state2 = NONE;
+//          TIM_Cmd(TIM16, DISABLE);
+        }
+        else
+          next_state2 = DATA1;
+        break;        
+      case NONE:
+          STM_EVAL_LEDOff(LED4);
+          TIM_Cmd(TIM16, DISABLE);
+        break;         
+      }        
+
+  }
+
+}
+
+void TIM17_IRQHandler(void)
+{
+  /*
+  if (TIM_GetITStatus(TIM17, TIM_IT_CC1) != RESET){
+    TIM_ClearITPendingBit(TIM17, TIM_IT_CC1);
+    capture = TIM_GetCapture1(TIM17);
+    TIM_SetCompare1(TIM17, capture + CCR1_Val);
+    STM_EVAL_LEDToggle(LED5);
+  }
+  */
+  
+    if (TIM_GetITStatus(TIM17, TIM_IT_CC1) != RESET){
+      TIM_ClearITPendingBit(TIM17, TIM_IT_CC1);
+      capture = TIM_GetCapture1(TIM17);         
+      
+      //STM_EVAL_LEDToggle(LED5);
+      //TIM_SetCompare2(TIM17, capture + CCR1_Val);
+      
+      switch(next_state3)
+      {
+      case INTERVAL:
+        TIM_SetCompare1(TIM17, capture + CCR1_Val * 5);
+        STM_EVAL_LEDOff(LED5);
+        next_state3 = START1;
+        break;
+      case START1:
+        TIM_SetCompare1(TIM17, capture + CCR1_Val * 2);
+        STM_EVAL_LEDOff(LED5);       
+        next_state3 = START2;
+        break;
+      case START2:
+        TIM_SetCompare1(TIM17, capture + CCR1_Val);
+        STM_EVAL_LEDOn(LED5);               
+        next_state3 = DATA1;
+        index3 = 0x1 << 25;
+        break;
+      case DATA1:
+        if(Led_data3 & index3){        
+          TIM_SetCompare1(TIM17, capture + CCR1_Val * 2);
+          STM_EVAL_LEDOff(LED5);
+        }
+        else
+        {
+          TIM_SetCompare1(TIM17, capture + CCR1_Val);
+          STM_EVAL_LEDOff(LED5);          
+        }                   
+        next_state3 = DATA2;
+        break;
+      case DATA2:
+        if(Led_data3 & index3){        
+          TIM_SetCompare1(TIM17, capture + CCR1_Val);
+          STM_EVAL_LEDOn(LED5);
+        }
+        else
+        {
+          TIM_SetCompare1(TIM17, capture + CCR1_Val*2);
+          STM_EVAL_LEDOn(LED5);          
+        }                           
+        index3 = index3 >> 1;
+        if(index3 == 0){
+          next_state3 = NONE;
+//          TIM_Cmd(TIM17, DISABLE);
+        }
+        else
+          next_state3 = DATA1;
+        break;        
+      case NONE:
+          STM_EVAL_LEDOff(LED5);
+          TIM_Cmd(TIM17, DISABLE);
+        break;         
+      }        
+
+  }
+
+}
+
+void TIM3_IRQHandler(void)
+{ 
+
+  if (TIM_GetITStatus(TIM3, TIM_IT_CC3) != RESET){
+      TIM_ClearITPendingBit(TIM3, TIM_IT_CC3);
+      capture = TIM_GetCapture3(TIM3);
+      
+      switch(next_state)
+      {
+      case INTERVAL:
+        TIM_SetCompare3(TIM3, capture + CCR3_Val * 5);
+        STM_EVAL_LEDOff(LED3);
+        next_state = START1;
+        break;
+      case START1:
+        TIM_SetCompare3(TIM3, capture + CCR3_Val * 2);
+        STM_EVAL_LEDOff(LED3);       
+        next_state = START2;
+        break;
+      case START2:
+        TIM_SetCompare3(TIM3, capture + CCR3_Val);
+        STM_EVAL_LEDOn(LED3);               
+        next_state = DATA1;
+        index = 0x1 << 25;
+        break;
+      case DATA1:
+        if(Led_data & index){        
+          TIM_SetCompare3(TIM3, capture + CCR3_Val * 2);
+          STM_EVAL_LEDOff(LED3);
+        }
+        else
+        {
+          TIM_SetCompare3(TIM3, capture + CCR3_Val);
+          STM_EVAL_LEDOff(LED3);          
+        }                   
+        next_state = DATA2;
+        break;
+      case DATA2:
+        if(Led_data & index){        
+          TIM_SetCompare3(TIM3, capture + CCR3_Val);
+          STM_EVAL_LEDOn(LED3);
+        }
+        else
+        {
+          TIM_SetCompare3(TIM3, capture + CCR3_Val*2);
+          STM_EVAL_LEDOn(LED3);          
+        }                           
+        index = index >> 1;
+        if(index == 0){
+          next_state = NONE;
+//          TIM_Cmd(TIM3, DISABLE);
+        }
+        else
+          next_state = DATA1;
+        break;        
+      case NONE:
+          STM_EVAL_LEDOff(LED3);
+          TIM_Cmd(TIM3, DISABLE);
+        break;         
+      }        
+  }
+    
+  /*
   if (TIM_GetITStatus(TIM3, TIM_IT_CC3) != RESET)
   {
-    TIM_ClearITPendingBit(TIM3, TIM_IT_CC3);
+      TIM_ClearITPendingBit(TIM3, TIM_IT_CC3);
 
-    /* LED3 toggling with frequency = 219.7 Hz */
-    STM_EVAL_LEDToggle(LED3);
-    capture = TIM_GetCapture3(TIM3);
-    TIM_SetCompare3(TIM3, capture + CCR3_Val);
+      // LED3 toggling with frequency = 219.7 Hz
+      //STM_EVAL_LEDToggle(LED3);
+      capture = TIM_GetCapture3(TIM3);
+      if(flag ==1){
+        TIM_SetCompare3(TIM3, capture + CCR3_Val);
+        flag = 0;
+      }
+      else
+      {
+          TIM_SetCompare3(TIM3, capture + CCR3_Val * 2);
+          flag = 1;          
+      }
+      
+      STM_EVAL_LEDToggle(LED3);
+     
+      
+      if(LedNo >= 3){
+        ManIndex = 0;
+        DataIndex = 0;
+        return;
+      }
+   
+      
+      if(ManIndex >=3){
+          ManIndex = 0;
+          DataIndex = DataIndex + 1;        
+      } 
+      
+      if(DataIndex == 29){
+        DataIndex = 0;
+        LedNo = LedNo + 1;
+      }      
+       
+      if(LedNo < 3){
+        if(data[LedNo][DataIndex] ==0){
+            ManCode[0] = 0;
+            ManCode[1] = 1;
+            ManCode[2] = 1;
+        }else if(data[LedNo][DataIndex] ==1) {
+            ManCode[0] = 0;
+            ManCode[1] = 0;
+            ManCode[2] = 1;
+        }else{
+            ManCode[0] = 0;
+            ManCode[1] = 0;
+            ManCode[2] = 0;      
+        }
+       }
+       else
+       {
+        if (LedNo > 255) LedNo = 3;
+        if(global_data[DataIndex] ==0){
+            ManCode[0] = 0;
+            ManCode[1] = 1;
+            ManCode[2] = 1;
+        }else if(global_data[DataIndex] ==1) {
+            ManCode[0] = 0;
+            ManCode[1] = 0;
+            ManCode[2] = 1;
+        }else{
+            ManCode[0] = 0;
+            ManCode[1] = 0;
+            ManCode[2] = 0;      
+        }
+          
+       }
+      
+      if(ManCode[ManIndex] == 1)
+            STM_EVAL_LEDOn(LED3);
+      else
+            STM_EVAL_LEDOff(LED3);
+      
+      ManIndex = ManIndex + 1;          
   }
-  else
-  {
-    TIM_ClearITPendingBit(TIM3, TIM_IT_CC4);
-
-    /* LED4 toggling with frequency = 439.4 Hz */
-    STM_EVAL_LEDToggle(LED4);
-    capture = TIM_GetCapture4(TIM3);
-    TIM_SetCompare4(TIM3, capture + CCR4_Val);
-  }
+  */
 }
 
 /**

@@ -55,7 +55,8 @@
 typedef enum 
 {
   LED3 = 0,
-  LED4 = 1
+  LED4 = 1,
+  LED5 = 2
 } Led_TypeDef;
 
 typedef enum 
@@ -80,15 +81,20 @@ typedef enum
 /** @addtogroup STM32F0308_DISCOVERY_LOW_LEVEL_LED
   * @{
   */
-#define LEDn                             2
+#define LEDn                             3
   
-#define LED3_PIN                         GPIO_Pin_9
+#define LED3_PIN                         GPIO_Pin_7
 #define LED3_GPIO_PORT                   GPIOC
 #define LED3_GPIO_CLK                    RCC_AHBPeriph_GPIOC
   
 #define LED4_PIN                         GPIO_Pin_8
 #define LED4_GPIO_PORT                   GPIOC
 #define LED4_GPIO_CLK                    RCC_AHBPeriph_GPIOC
+    
+#define LED5_PIN                         GPIO_Pin_9
+#define LED5_GPIO_PORT                   GPIOC
+#define LED5_GPIO_CLK                    RCC_AHBPeriph_GPIOC
+    
 
 /**
   * @}
