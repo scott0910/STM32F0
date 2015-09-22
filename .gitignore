@@ -39,3 +39,5 @@
 *.dep
 *.dni
 *.map
+*.pbd
+*.browse
