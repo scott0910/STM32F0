@@ -34,7 +34,7 @@
 # backup files
 *.bak
 
-#
+# other files
 *.wsdt
 *.dep
 *.dni
